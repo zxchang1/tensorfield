@@ -32,6 +32,7 @@ def maintain_pressure(bus, pins, DEVICE, GPIOB, OLATB, threshold):
 def manual_mode(bus, pins, DEVICE, GPIOB, OLATB, GPIOA, OLATA):
     man_mode = True
     while man_mode == True:
+        read_pressure(bus)
         if readpin(dev2pin('button_blow'), bus, DEVICE, dev2block('button_blow')) == 1 and \
             readpin(dev2pin('button_suck'), bus, DEVICE, dev2block('button_suck')) == 0:
                 pump_operate(bus, pins, DEVICE, OLATB, 'blow')
@@ -63,9 +64,14 @@ def pump_operate(bus, pins, DEVICE, OLATB, direction):
     print("air pump set to " + direction)
 
 def read_pressure(bus):
+    GAIN = 1 #-2048 to 2047 ADC represents -4.096V to +4.096V
     adcRaw_pressure = adc_aircylinder.read_adc(adcpin_airpressure, gain=GAIN)
-    print(adcRaw_pressure)
-    pressure = 280  
+    #voltage of sensor = (4/10^3kPa)*pressure + 1 <--from PSE530-R06 spec sheet
+    #voltage = ADC output x (4.096/2047) <--from ADS1015 specs with GAIN = 1
+    print('ADC Raw Pressure Reading = ' + str(adcRaw_pressure))
+    pressure = (adcRaw_pressure * (4.096/2047) - 1) * (1000/4) #pressure in kPa
+    print('Pressure = ' + str(pressure) + 'kPa')
+
     return pressure
 
 def uint8_to_binary_string(uint8):
@@ -127,7 +133,6 @@ if __name__ == "__main__":
 
     adc_aircylinder = Adafruit_ADS1x15.ADS1015(address=0x48, busnum=1)
     
-    GAIN = 1
     values = [0]*4
 
     bus = smbus.SMBus(1)
