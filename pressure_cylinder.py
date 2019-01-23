@@ -39,6 +39,9 @@ def manual_mode(bus, pins, DEVICE, GPIOB, OLATB, GPIOA, OLATA):
         elif readpin(dev2pin('button_blow'), bus, DEVICE, dev2block('button_blow')) == 0 and \
             readpin(dev2pin('button_suck'), bus, DEVICE, dev2block('button_suck')) == 1:
                 pump_operate(bus, pins, DEVICE, OLATB, 'vacuum')
+        elif readpin(dev2pin('button_blow'), bus, DEVICE, dev2block('button_blow')) == 1 and \
+            readpin(dev2pin('button_suck'), bus, DEVICE, dev2block('button_suck')) == 1:
+                pump_operate(bus, pins, DEVICE, OLATB, 'refill')
         else:
             pump_operate(bus, pins, DEVICE, OLATB, 'off')
         if readpin(dev2pin('toggle'), bus, DEVICE, dev2block('toggle')) == 0:
@@ -51,14 +54,22 @@ def pump_operate(bus, pins, DEVICE, OLATB, direction):
         pins[dev2pin('pump_motor')] = 1
         pins[dev2pin('valve_blow')] = 1
         pins[dev2pin('valve_suck')] = 0
+        pins[dev2pin('valve_stop')] = 0
     elif direction == 'off':
         pins[dev2pin('pump_motor')] = 0
         pins[dev2pin('valve_blow')] = 0
         pins[dev2pin('valve_suck')] = 0
+        pins[dev2pin('valve_stop')] = 0
     elif direction == 'vacuum':
         pins[dev2pin('pump_motor')] = 1
         pins[dev2pin('valve_blow')] = 0
         pins[dev2pin('valve_suck')] = 1
+        pins[dev2pin('valve_stop')] = 0
+    elif direction == 'refill':
+        pins[dev2pin('pump_motor')] = 1
+        pins[dev2pin('valve_blow')] = 0
+        pins[dev2pin('valve_suck')] = 1
+        pins[dev2pin('valve_stop')] = 1
 
     set_pins(bus, pins, DEVICE, OLATB)
     print("air pump set to " + direction)
