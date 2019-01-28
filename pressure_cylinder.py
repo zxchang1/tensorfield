@@ -20,14 +20,17 @@ def dev2block(dev):
             'toggle': 0x13, 'button_blow': 0x12, 'button_suck': 0x12, 'LED': 0x14}
     return dict[dev]        
 
-def maintain_pressure(bus, pins, DEVICE, GPIOB, OLATB, threshold): 
+def maintain_pressure(bus, pins, DEVICE, GPIOB, OLATB, threshold): #maintain +10/-0kPa of threshold 
     pins = read_pins(bus, DEVICE, GPIOB)
+    pump_state = pins[dev2pin('pump_motor')]
     pressure = read_pressure(bus)
     if pressure < threshold:
         pump_operate(bus, pins, DEVICE, OLATB, 'blow')
-    else:
+        time.sleep(0.5) #noisy ADC readings without this
+    elif pressure > threshold + 10:
         pump_operate(bus, pins, DEVICE, OLATB, 'off')
-    set_pins(bus, pins, DEVICE, OLATB)
+    
+    #set_pins(bus, pins, DEVICE, OLATB)
 
 def manual_mode(bus, pins, DEVICE, GPIOB, OLATB, GPIOA, OLATA):
     man_mode = True
@@ -75,8 +78,13 @@ def pump_operate(bus, pins, DEVICE, OLATB, direction):
     print("air pump set to " + direction)
 
 def read_pressure(bus):
+    adcRaw_pressure_accumulator = 0
     GAIN = 1 #-2048 to 2047 ADC represents -4.096V to +4.096V
-    adcRaw_pressure = adc_aircylinder.read_adc(adcpin_airpressure, gain=GAIN)
+    samples = 10
+    for i in range(samples):
+        adcRaw_pressure_accumulator += adc_aircylinder.read_adc(adcpin_airpressure, gain = GAIN)
+
+    adcRaw_pressure = adcRaw_pressure_accumulator/samples
     #voltage of sensor = (4/10^3kPa)*pressure + 1 <--from PSE530-R06 spec sheet
     #voltage = ADC output x (4.096/2047) <--from ADS1015 specs with GAIN = 1
     print('ADC Raw Pressure Reading = ' + str(adcRaw_pressure))
@@ -89,13 +97,13 @@ def uint8_to_binary_string(uint8):
     return bin(uint8)[2:].zfill(8)
 
 def read_pins(bus, DEVICE, GPIO):
-    print(DEVICE, GPIO)
+    #print(DEVICE, GPIO)
     int_pins = bus.read_byte_data(DEVICE, GPIO)
-    print(int_pins)
+    #print(int_pins)
     str_pins = uint8_to_binary_string(int_pins)
-    print(str_pins)
+    #print(str_pins)
     pins = list(map(int, reversed(str_pins)))
-    print pins
+    #print pins
     return pins
 
 def readpin(pin, bus, DEVICE, GPIO):
@@ -106,7 +114,7 @@ def readpin(pin, bus, DEVICE, GPIO):
     return readpin
 
 def set_pins(bus, pins, DEVICE, OLAT):
-    print(pins)
+    #print(pins)
     #print(type(pins))
     intBinOut = pins[::-1]
     #print(intBinOut)
@@ -165,7 +173,7 @@ if __name__ == "__main__":
 
     set_pins(bus, [0,0,0,0,1,0,0,0], DEVICE, OLATB)
     time.sleep(0.5)
-    print(read_pins(bus, DEVICE, GPIOB)) 
+    #print(read_pins(bus, DEVICE, GPIOB)) 
 
     distance = read_distance()
     print("%d mm, %d cm" % (distance, (distance/10)))
