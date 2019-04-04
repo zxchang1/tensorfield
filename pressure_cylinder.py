@@ -161,24 +161,26 @@ if __name__ == "__main__":
     pins = read_pins(bus, DEVICE, GPIOB) #this maps to MCP23017 pins GPB0-GPB7
 
 
-    while True:
-        print('Toggle Value Is ' + str(readpin(dev2pin('toggle'), bus, DEVICE, GPIOB)))
-        if readpin(dev2pin('toggle'), bus, DEVICE, GPIOB) == 1:
-           bus.write_byte_data(DEVICE, OLATA, 0b00001000) 
-           manual_mode(bus, pins, DEVICE, GPIOB, OLATB, GPIOA, OLATA)
-        else:
-            bus.write_byte_data(DEVICE, OLATA, 0b00000000)
-            maintain_pressure(bus, pins, DEVICE, GPIOB, OLATB, 275) #threshold in kPa
+    try:
+        while True:
+            print('Toggle Value Is ' + str(readpin(dev2pin('toggle'), bus, DEVICE, GPIOB)))
+            if readpin(dev2pin('toggle'), bus, DEVICE, GPIOB) == 1:
+               bus.write_byte_data(DEVICE, OLATA, 0b00001000) 
+               manual_mode(bus, pins, DEVICE, GPIOB, OLATB, GPIOA, OLATA)
+            else:
+                bus.write_byte_data(DEVICE, OLATA, 0b00000000)
+                maintain_pressure(bus, pins, DEVICE, GPIOB, OLATB, 275) #threshold in kPa
+            time.sleep(0.5)
+
+        set_pins(bus, [0,0,0,0,1,0,0,0], DEVICE, OLATB)
         time.sleep(0.5)
+        #print(read_pins(bus, DEVICE, GPIOB)) 
 
-    set_pins(bus, [0,0,0,0,1,0,0,0], DEVICE, OLATB)
-    time.sleep(0.5)
-    #print(read_pins(bus, DEVICE, GPIOB)) 
-
-    distance = read_distance()
-    print("%d mm, %d cm" % (distance, (distance/10)))
-
-
+        distance = read_distance()
+        print("%d mm, %d cm" % (distance, (distance/10)))
+  
+    except KeyboardInterrupt:
+        pump_operate(bus, pins, DEVICE, OLATB, 'off')
 
 
 
